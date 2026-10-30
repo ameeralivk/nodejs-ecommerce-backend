@@ -1,6 +1,19 @@
-const mongoose = require('mongoose');
+import mongoose, { Document } from 'mongoose';
 
-const productSchema = new mongoose.Schema(
+export type ProductStatus = 'active' | 'inactive';
+
+export interface IProduct extends Document {
+  name: string;
+  sku: string;
+  description: string;
+  price: number;
+  salePrice: number | null;
+  stock: number;
+  category: mongoose.Types.ObjectId;
+  status: ProductStatus;
+}
+
+const productSchema = new mongoose.Schema<IProduct>(
   {
     name: { type: String, required: true, trim: true },
     sku: { type: String, required: true, unique: true, uppercase: true, trim: true },
@@ -18,4 +31,4 @@ productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ category: 1 });
 productSchema.index({ price: 1 });
 
-module.exports = mongoose.model('Product', productSchema);
+export default mongoose.model<IProduct>('Product', productSchema);

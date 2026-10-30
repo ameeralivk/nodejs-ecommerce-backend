@@ -1,10 +1,10 @@
-const asyncHandler = require('../utils/asyncHandler');
-const ApiError = require('../utils/ApiError');
-const Category = require('../models/Category');
-const Product = require('../models/Product');
-const { buildTree, wouldCreateCycle } = require('../utils/categoryTree');
+import asyncHandler from '../utils/asyncHandler';
+import ApiError from '../utils/ApiError';
+import Category from '../models/Category';
+import Product from '../models/Product';
+import { buildTree, wouldCreateCycle } from '../utils/categoryTree';
 
-const createCategory = asyncHandler(async (req, res) => {
+export const createCategory = asyncHandler(async (req, res) => {
   const { name, parent } = req.body;
 
   if (parent) {
@@ -16,7 +16,7 @@ const createCategory = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: category });
 });
 
-const updateCategory = asyncHandler(async (req, res) => {
+export const updateCategory = asyncHandler(async (req, res) => {
   const { name, parent } = req.body;
 
   const category = await Category.findById(req.params.id);
@@ -33,7 +33,7 @@ const updateCategory = asyncHandler(async (req, res) => {
       const parentCategory = await Category.findById(parent);
       if (!parentCategory) throw new ApiError(400, 'Parent category does not exist');
 
-      if (await wouldCreateCycle(category._id, parent)) {
+      if (await wouldCreateCycle(category._id as any, parent)) {
         throw new ApiError(400, 'This change would create a circular category relationship');
       }
 
@@ -47,7 +47,7 @@ const updateCategory = asyncHandler(async (req, res) => {
   res.json({ success: true, data: category });
 });
 
-const deleteCategory = asyncHandler(async (req, res) => {
+export const deleteCategory = asyncHandler(async (req, res) => {
   const category = await Category.findById(req.params.id);
   if (!category) throw new ApiError(404, 'Category not found');
 
@@ -65,8 +65,8 @@ const deleteCategory = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Category deleted' });
 });
 
-const listCategories = asyncHandler(async (req, res) => {
-  const filter = {};
+export const listCategories = asyncHandler(async (req, res) => {
+  const filter: Record<string, unknown> = {};
   if (req.query.parent !== undefined) {
     filter.parent = req.query.parent === 'null' ? null : req.query.parent;
   }
@@ -75,23 +75,14 @@ const listCategories = asyncHandler(async (req, res) => {
   res.json({ success: true, data: categories });
 });
 
-const getCategoryTree = asyncHandler(async (req, res) => {
+export const getCategoryTree = asyncHandler(async (req, res) => {
   const categories = await Category.find().sort('name');
   const tree = buildTree(categories, null);
   res.json({ success: true, data: tree });
 });
 
-const getCategoryById = asyncHandler(async (req, res) => {
+export const getCategoryById = asyncHandler(async (req, res) => {
   const category = await Category.findById(req.params.id);
   if (!category) throw new ApiError(404, 'Category not found');
   res.json({ success: true, data: category });
 });
-
-module.exports = {
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  listCategories,
-  getCategoryTree,
-  getCategoryById,
-};

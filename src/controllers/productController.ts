@@ -1,10 +1,10 @@
-const asyncHandler = require('../utils/asyncHandler');
-const ApiError = require('../utils/ApiError');
-const Product = require('../models/Product');
-const Category = require('../models/Category');
-const { getDescendantIds } = require('../utils/categoryTree');
+import asyncHandler from '../utils/asyncHandler';
+import ApiError from '../utils/ApiError';
+import Product from '../models/Product';
+import Category from '../models/Category';
+import { getDescendantIds } from '../utils/categoryTree';
 
-const createProduct = asyncHandler(async (req, res) => {
+export const createProduct = asyncHandler(async (req, res) => {
   const { name, sku, description, price, salePrice, stock, category, status } = req.body;
 
   const categoryExists = await Category.findById(category);
@@ -24,7 +24,7 @@ const createProduct = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: product });
 });
 
-const updateProduct = asyncHandler(async (req, res) => {
+export const updateProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
   if (!product) throw new ApiError(404, 'Product not found');
 
@@ -33,16 +33,16 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (!categoryExists) throw new ApiError(400, 'Category does not exist');
   }
 
-  const fields = ['name', 'sku', 'description', 'price', 'salePrice', 'stock', 'category', 'status'];
+  const fields = ['name', 'sku', 'description', 'price', 'salePrice', 'stock', 'category', 'status'] as const;
   fields.forEach((field) => {
-    if (req.body[field] !== undefined) product[field] = req.body[field];
+    if (req.body[field] !== undefined) (product as any)[field] = req.body[field];
   });
 
   await product.save();
   res.json({ success: true, data: product });
 });
 
-const deleteProduct = asyncHandler(async (req, res) => {
+export const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
   if (!product) throw new ApiError(404, 'Product not found');
 
@@ -50,29 +50,30 @@ const deleteProduct = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Product deleted' });
 });
 
-const listProducts = asyncHandler(async (req, res) => {
-  const page = Math.max(parseInt(req.query.page) || 1, 1);
-  const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+export const listProducts = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit as string) || 10, 1);
 
-  const filter = {};
+  const filter: Record<string, unknown> = {};
   if (!req.query.includeInactive) filter.status = 'active';
 
   if (req.query.search) {
-    filter.$text = { $search: req.query.search };
+    filter.$text = { $search: req.query.search as string };
   }
 
   if (req.query.category) {
-    const categoryIds = await getDescendantIds(req.query.category);
+    const categoryIds = await getDescendantIds(req.query.category as string);
     filter.category = { $in: categoryIds };
   }
 
   if (req.query.minPrice || req.query.maxPrice) {
-    filter.price = {};
-    if (req.query.minPrice) filter.price.$gte = Number(req.query.minPrice);
-    if (req.query.maxPrice) filter.price.$lte = Number(req.query.maxPrice);
+    const price: Record<string, number> = {};
+    if (req.query.minPrice) price.$gte = Number(req.query.minPrice);
+    if (req.query.maxPrice) price.$lte = Number(req.query.maxPrice);
+    filter.price = price;
   }
 
-  const sortMap = {
+  const sortMap: Record<string, string> = {
     priceAsc: 'price',
     priceDesc: '-price',
     newest: '-createdAt',
@@ -80,7 +81,7 @@ const listProducts = asyncHandler(async (req, res) => {
     nameAsc: 'name',
     nameDesc: '-name',
   };
-  const sort = sortMap[req.query.sort] || '-createdAt';
+  const sort = sortMap[req.query.sort as string] || '-createdAt';
 
   const [products, total] = await Promise.all([
     Product.find(filter)
@@ -98,10 +99,8 @@ const listProducts = asyncHandler(async (req, res) => {
   });
 });
 
-const getProductById = asyncHandler(async (req, res) => {
+export const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).populate('category', 'name');
   if (!product) throw new ApiError(404, 'Product not found');
   res.json({ success: true, data: product });
 });
-
-module.exports = { createProduct, updateProduct, deleteProduct, listProducts, getProductById };

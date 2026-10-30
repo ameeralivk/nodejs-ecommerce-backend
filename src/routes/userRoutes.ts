@@ -1,14 +1,8 @@
-const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../middlewares/validate');
-const { protect, authorize } = require('../middlewares/auth');
-const {
-  getMe,
-  updateMe,
-  listUsers,
-  getUserById,
-  setUserStatus,
-} = require('../controllers/userController');
+import express from 'express';
+import { body } from 'express-validator';
+import validate from '../middlewares/validate';
+import { protect, authorize } from '../middlewares/auth';
+import { getMe, updateMe, listUsers, getUserById, setUserStatus } from '../controllers/userController';
 
 const router = express.Router();
 
@@ -34,4 +28,4 @@ router.patch(
   setUserStatus
 );
 
-module.exports = router;
+export default router;

@@ -1,9 +1,9 @@
-const asyncHandler = require('../utils/asyncHandler');
-const ApiError = require('../utils/ApiError');
-const User = require('../models/User');
-const { generateToken } = require('../utils/jwt');
+import asyncHandler from '../utils/asyncHandler';
+import ApiError from '../utils/ApiError';
+import User from '../models/User';
+import { generateToken } from '../utils/jwt';
 
-const register = asyncHandler(async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   const existing = await User.findOne({ email });
@@ -15,7 +15,7 @@ const register = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: { user, token } });
 });
 
-const login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
@@ -27,5 +27,3 @@ const login = asyncHandler(async (req, res) => {
   const token = generateToken(user);
   res.json({ success: true, data: { user, token } });
 });
-
-module.exports = { register, login };

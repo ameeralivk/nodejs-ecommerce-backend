@@ -1,15 +1,15 @@
-const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../middlewares/validate');
-const { protect, authorize } = require('../middlewares/auth');
-const {
+import express from 'express';
+import { body } from 'express-validator';
+import validate from '../middlewares/validate';
+import { protect, authorize } from '../middlewares/auth';
+import {
   createCategory,
   updateCategory,
   deleteCategory,
   listCategories,
   getCategoryTree,
   getCategoryById,
-} = require('../controllers/categoryController');
+} from '../controllers/categoryController';
 
 const router = express.Router();
 
@@ -41,4 +41,4 @@ router.put(
 
 router.delete('/:id', deleteCategory);
 
-module.exports = router;
+export default router;

@@ -1,18 +1,20 @@
-const jwt = require('jsonwebtoken');
-const asyncHandler = require('../utils/asyncHandler');
-const ApiError = require('../utils/ApiError');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import { RequestHandler } from 'express';
+import asyncHandler from '../utils/asyncHandler';
+import ApiError from '../utils/ApiError';
+import User from '../models/User';
+import { JwtPayload } from '../utils/jwt';
 
-const protect = asyncHandler(async (req, res, next) => {
+export const protect = asyncHandler(async (req, res, next) => {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     throw new ApiError(401, 'Not authorized, token missing');
   }
 
   const token = header.split(' ')[1];
-  let decoded;
+  let decoded: JwtPayload;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
   } catch (err) {
     throw new ApiError(401, 'Not authorized, invalid or expired token');
   }
@@ -25,11 +27,9 @@ const protect = asyncHandler(async (req, res, next) => {
   next();
 });
 
-const authorize = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+export const authorize = (...roles: string[]): RequestHandler => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
     throw new ApiError(403, 'You do not have permission to perform this action');
   }
   next();
 };
-
-module.exports = { protect, authorize };

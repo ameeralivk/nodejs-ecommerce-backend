@@ -1,10 +1,11 @@
-const ApiError = require('../utils/ApiError');
+import { Request, Response, NextFunction } from 'express';
+import ApiError from '../utils/ApiError';
 
-const notFound = (req, res, next) => {
+export const notFound = (req: Request, res: Response, next: NextFunction) => {
   next(new ApiError(404, `Route not found: ${req.originalUrl}`));
 };
 
-const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
 
@@ -16,7 +17,7 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'ValidationError') {
     statusCode = 400;
     message = Object.values(err.errors)
-      .map((e) => e.message)
+      .map((e: any) => e.message)
       .join(', ');
   }
 
@@ -32,5 +33,3 @@ const errorHandler = (err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
-
-module.exports = { notFound, errorHandler };

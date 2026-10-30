@@ -1,14 +1,14 @@
-const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../middlewares/validate');
-const { protect, authorize } = require('../middlewares/auth');
-const {
+import express from 'express';
+import { body } from 'express-validator';
+import validate from '../middlewares/validate';
+import { protect, authorize } from '../middlewares/auth';
+import {
   createProduct,
   updateProduct,
   deleteProduct,
   listProducts,
   getProductById,
-} = require('../controllers/productController');
+} from '../controllers/productController';
 
 const router = express.Router();
 
@@ -41,4 +41,4 @@ router.post('/', createRules, validate, createProduct);
 router.put('/:id', updateRules, validate, updateProduct);
 router.delete('/:id', deleteProduct);
 
-module.exports = router;
+export default router;

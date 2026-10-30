@@ -1,14 +1,14 @@
-const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../middlewares/validate');
-const { protect, authorize } = require('../middlewares/auth');
-const {
+import express from 'express';
+import { body } from 'express-validator';
+import validate from '../middlewares/validate';
+import { protect, authorize } from '../middlewares/auth';
+import {
   createOrder,
   getMyOrders,
   getOrderById,
   listAllOrders,
   updateOrderStatus,
-} = require('../controllers/orderController');
+} from '../controllers/orderController';
 
 const router = express.Router();
 
@@ -37,4 +37,4 @@ router.patch(
   updateOrderStatus
 );
 
-module.exports = router;
+export default router;

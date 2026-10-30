@@ -1,31 +1,32 @@
-const asyncHandler = require('../utils/asyncHandler');
-const ApiError = require('../utils/ApiError');
-const User = require('../models/User');
+import asyncHandler from '../utils/asyncHandler';
+import ApiError from '../utils/ApiError';
+import User from '../models/User';
 
-const getMe = asyncHandler(async (req, res) => {
+export const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: req.user });
 });
 
-const updateMe = asyncHandler(async (req, res) => {
+export const updateMe = asyncHandler(async (req, res) => {
   const { name, email } = req.body;
+  const user = req.user!;
 
   if (email) {
-    const existing = await User.findOne({ email, _id: { $ne: req.user._id } });
+    const existing = await User.findOne({ email, _id: { $ne: user._id } });
     if (existing) throw new ApiError(409, 'Email is already in use');
-    req.user.email = email;
+    user.email = email;
   }
 
-  if (name) req.user.name = name;
+  if (name) user.name = name;
 
-  await req.user.save();
-  res.json({ success: true, data: req.user });
+  await user.save();
+  res.json({ success: true, data: user });
 });
 
-const listUsers = asyncHandler(async (req, res) => {
-  const page = Math.max(parseInt(req.query.page) || 1, 1);
-  const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+export const listUsers = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit as string) || 10, 1);
 
-  const filter = {};
+  const filter: Record<string, unknown> = {};
   if (req.query.role) filter.role = req.query.role;
   if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
 
@@ -44,19 +45,19 @@ const listUsers = asyncHandler(async (req, res) => {
   });
 });
 
-const getUserById = asyncHandler(async (req, res) => {
+export const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) throw new ApiError(404, 'User not found');
   res.json({ success: true, data: user });
 });
 
-const setUserStatus = asyncHandler(async (req, res) => {
+export const setUserStatus = asyncHandler(async (req, res) => {
   const { isActive } = req.body;
 
   const user = await User.findById(req.params.id);
   if (!user) throw new ApiError(404, 'User not found');
 
-  if (String(user._id) === String(req.user._id)) {
+  if (String(user._id) === String(req.user!._id)) {
     throw new ApiError(400, 'You cannot change your own account status');
   }
 
@@ -64,5 +65,3 @@ const setUserStatus = asyncHandler(async (req, res) => {
   await user.save();
   res.json({ success: true, data: user });
 });
-
-module.exports = { getMe, updateMe, listUsers, getUserById, setUserStatus };

@@ -1,88 +1,33 @@
 import asyncHandler from '../utils/asyncHandler';
-import ApiError from '../utils/ApiError';
-import Category from '../models/Category';
-import Product from '../models/Product';
-import { buildTree, wouldCreateCycle } from '../utils/categoryTree';
+import * as categoryService from '../services/categoryService';
 
 export const createCategory = asyncHandler(async (req, res) => {
-  const { name, parent } = req.body;
-
-  if (parent) {
-    const parentCategory = await Category.findById(parent);
-    if (!parentCategory) throw new ApiError(400, 'Parent category does not exist');
-  }
-
-  const category = await Category.create({ name, parent: parent || null });
+  const category = await categoryService.createCategory(req.body.name, req.body.parent);
   res.status(201).json({ success: true, data: category });
 });
 
 export const updateCategory = asyncHandler(async (req, res) => {
-  const { name, parent } = req.body;
-
-  const category = await Category.findById(req.params.id);
-  if (!category) throw new ApiError(404, 'Category not found');
-
-  if (parent !== undefined) {
-    if (parent === null) {
-      category.parent = null;
-    } else {
-      if (String(parent) === String(category._id)) {
-        throw new ApiError(400, 'A category cannot be its own parent');
-      }
-
-      const parentCategory = await Category.findById(parent);
-      if (!parentCategory) throw new ApiError(400, 'Parent category does not exist');
-
-      if (await wouldCreateCycle(category._id as any, parent)) {
-        throw new ApiError(400, 'This change would create a circular category relationship');
-      }
-
-      category.parent = parent;
-    }
-  }
-
-  if (name) category.name = name;
-
-  await category.save();
+  const category = await categoryService.updateCategory(String(req.params.id), req.body);
   res.json({ success: true, data: category });
 });
 
 export const deleteCategory = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
-  if (!category) throw new ApiError(404, 'Category not found');
-
-  const childCount = await Category.countDocuments({ parent: category._id });
-  if (childCount > 0) {
-    throw new ApiError(400, 'Cannot delete a category that has subcategories');
-  }
-
-  const productCount = await Product.countDocuments({ category: category._id });
-  if (productCount > 0) {
-    throw new ApiError(400, 'Cannot delete a category that has products assigned to it');
-  }
-
-  await category.deleteOne();
+  await categoryService.deleteCategory(String(req.params.id));
   res.json({ success: true, message: 'Category deleted' });
 });
 
 export const listCategories = asyncHandler(async (req, res) => {
-  const filter: Record<string, unknown> = {};
-  if (req.query.parent !== undefined) {
-    filter.parent = req.query.parent === 'null' ? null : req.query.parent;
-  }
-
-  const categories = await Category.find(filter).sort('name');
+  const parent = req.query.parent !== undefined ? String(req.query.parent) : undefined;
+  const categories = await categoryService.listCategories(parent);
   res.json({ success: true, data: categories });
 });
 
 export const getCategoryTree = asyncHandler(async (req, res) => {
-  const categories = await Category.find().sort('name');
-  const tree = buildTree(categories, null);
+  const tree = await categoryService.getCategoryTree();
   res.json({ success: true, data: tree });
 });
 
 export const getCategoryById = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
-  if (!category) throw new ApiError(404, 'Category not found');
+  const category = await categoryService.getCategoryById(String(req.params.id));
   res.json({ success: true, data: category });
 });

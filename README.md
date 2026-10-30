@@ -1,0 +1,135 @@
+# E-commerce REST API
+
+Backend REST API for a basic e-commerce application, built with Node.js, Express, MongoDB/Mongoose and JWT authentication.
+
+## Tech stack
+
+- Node.js + Express
+- MongoDB + Mongoose
+- JWT authentication, bcrypt password hashing
+- express-validator for request validation
+- helmet, cors, express-rate-limit, morgan
+
+## Project structure
+
+```
+src/
+  config/        MongoDB connection
+  models/        Mongoose schemas (User, Category, Product, Order)
+  middlewares/   auth, validation, centralized error handling
+  controllers/   business logic
+  routes/        route definitions
+  utils/         ApiError, asyncHandler, JWT helper, category tree helpers
+  app.js         Express app setup
+server.js        entry point
+```
+
+## Setup
+
+1. Install dependencies
+   ```
+   npm install
+   ```
+2. Copy the env file and fill in your own values
+   ```
+   cp .env.example .env
+   ```
+   | Variable        | Description                              |
+   |-----------------|-------------------------------------------|
+   | PORT            | Port the server listens on                |
+   | MONGO_URI       | MongoDB connection string                  |
+   | JWT_SECRET      | Secret used to sign JWTs                   |
+   | JWT_EXPIRES_IN  | Token lifetime, e.g. `7d`                  |
+
+3. Make sure MongoDB is running locally (or point `MONGO_URI` at Atlas / any reachable instance).
+
+4. Run the server
+   ```
+   npm run dev     # with nodemon
+   npm start       # plain node
+   ```
+
+   Health check: `GET http://localhost:5000/health`
+
+## Creating the first admin user
+
+Registration (`POST /api/auth/register`) always creates a `customer`. To get an admin, register normally and then promote that user directly in MongoDB:
+
+```js
+// mongosh
+use ecommerce-api
+db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })
+```
+
+Log in again afterwards to get a token that carries the `admin` role.
+
+## API overview
+
+All endpoints are prefixed with `/api`. Protected routes require `Authorization: Bearer <token>`.
+
+### Auth
+| Method | Endpoint             | Access | Description          |
+|--------|-----------------------|--------|----------------------|
+| POST   | /auth/register         | Public | Register a customer |
+| POST   | /auth/login             | Public | Login, returns JWT   |
+
+### Users
+| Method | Endpoint                | Access        | Description                  |
+|--------|--------------------------|---------------|-------------------------------|
+| GET    | /users/me                 | Logged in     | Get own profile              |
+| PUT    | /users/me                 | Logged in     | Update own profile (name/email) |
+| GET    | /users                     | Admin         | List users (pagination, filter by role/isActive) |
+| GET    | /users/:id                 | Admin         | Get a single user            |
+| PATCH  | /users/:id/status           | Admin         | Activate/deactivate a user   |
+
+### Categories (unlimited nesting)
+| Method | Endpoint             | Access | Description                              |
+|--------|-----------------------|--------|-------------------------------------------|
+| GET    | /categories             | Public | List categories (optionally `?parent=<id|null>`) |
+| GET    | /categories/tree         | Public | Full nested category tree                |
+| GET    | /categories/:id          | Public | Get a single category                    |
+| POST   | /categories             | Admin  | Create a category (`name`, optional `parent`) |
+| PUT    | /categories/:id          | Admin  | Update a category (rejects circular parent changes) |
+| DELETE | /categories/:id          | Admin  | Delete (blocked if it has subcategories or products) |
+
+### Products
+| Method | Endpoint          | Access | Description |
+|--------|---------------------|--------|-------------|
+| GET    | /products             | Public | List products with search/filter/sort/pagination |
+| GET    | /products/:id          | Public | Get a single product |
+| POST   | /products             | Admin  | Create a product |
+| PUT    | /products/:id          | Admin  | Update a product |
+| DELETE | /products/:id          | Admin  | Delete a product |
+
+Query params for `GET /products`:
+- `search` – text search on name/description
+- `category` – category id; also matches all of its subcategories
+- `minPrice`, `maxPrice`
+- `sort` – one of `priceAsc`, `priceDesc`, `newest`, `oldest`, `nameAsc`, `nameDesc`
+- `page`, `limit`
+- `includeInactive` – admin use, includes inactive products in the results
+
+### Orders
+| Method | Endpoint             | Access    | Description |
+|--------|------------------------|-----------|-------------|
+| POST   | /orders                  | Customer  | Place an order (`items: [{ product, quantity }]`) |
+| GET    | /orders/my                | Customer  | List own orders |
+| GET    | /orders/:id                | Owner/Admin | Get a single order |
+| GET    | /orders                   | Admin     | List all orders (filter by `?status=`) |
+| PATCH  | /orders/:id/status          | Admin     | Update order status |
+
+Order statuses: `Pending → Confirmed → Processing → Shipped → Delivered / Cancelled`.
+
+Stock handling: each item's stock is checked and decremented atomically (`findOneAndUpdate` with a `stock >= quantity` guard), so two concurrent orders can never oversell the same product. If a later item in the same order fails (not found / insufficient stock), stock already reserved for earlier items in that order is rolled back. Cancelling an order restores stock for all its items.
+
+## Postman collection
+
+Import [`postman/ecommerce-api.postman_collection.json`](postman/ecommerce-api.postman_collection.json) into Postman. It uses two collection variables:
+- `baseUrl` (defaults to `http://localhost:5000/api`)
+- `token` – set automatically after you run the Login or Register request
+
+## Notes on design decisions
+
+- **Categories** use a simple `parent` reference (no fixed-depth fields), so nesting is unlimited. The full tree is built in memory from a flat list, and a recursive ancestor-walk check (`wouldCreateCycle`) blocks a category from being reparented under one of its own descendants.
+- **Product filtering by category** walks the category tree breadth-first from the requested category to collect all descendant ids, then filters products with `category: { $in: ids }`.
+- **Order totals and prices** are always computed on the server from the current product price/sale price — the client only sends product ids and quantities.

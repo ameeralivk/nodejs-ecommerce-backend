@@ -1,0 +1,339 @@
+{
+  "info": {
+    "name": "E-commerce API",
+    "description": "Auth is httpOnly-cookie based (accessToken + refreshToken), not Bearer tokens. Postman's cookie manager stores and resends them automatically for requests to {{baseUrl}}'s host, so no Authorization header is needed anywhere in this collection. Because cookies are shared per host, only one session (customer OR admin) is active at a time: re-run the matching request in the Auth folder ('Login' or 'Login (Admin)') before switching between customer-only and admin-only requests. To get an admin account, register normally then promote that user's role to 'admin' directly in MongoDB (see README), then use 'Login (Admin)'.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('userId', pm.response.json().data.user._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Customer\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "description": "Sets accessToken/refreshToken httpOnly cookies on success. Response body only contains { user }."
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "description": "Logs in as the customer session. Use this before hitting customer-only endpoints (e.g. Create Order)."
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "description": "Logs in as the admin session, overwriting whatever session cookies were active before. Use this before hitting admin-only endpoints."
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": "{{baseUrl}}/auth/refresh"
+          },
+          "description": "Uses the refreshToken cookie to issue a new access/refresh token pair (rotates the refresh token). Call this once the access token has expired instead of logging in again."
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "description": "Clears the auth cookies, ending the current session."
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Updated\"\n}" },
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get User By Id (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Activate/Deactivate User (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" },
+            "url": "{{baseUrl}}/users/{{userId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create Category (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('categoryId', pm.response.json().data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Electronics\"\n}" },
+            "url": "{{baseUrl}}/categories"
+          }
+        },
+        {
+          "name": "Create Subcategory (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mobiles\",\n  \"parent\": \"{{categoryId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/categories"
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/categories" }
+        },
+        {
+          "name": "Get Category Tree",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/categories/tree" }
+        },
+        {
+          "name": "Get Category By Id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/categories/{{categoryId}}" }
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Electronics & Gadgets\"\n}" },
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Delete Category (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Samsung Galaxy S24\",\n  \"sku\": \"SGS24-128\",\n  \"description\": \"Flagship Android phone\",\n  \"price\": 999,\n  \"salePrice\": 899,\n  \"stock\": 50,\n  \"category\": \"{{categoryId}}\",\n  \"status\": \"active\"\n}"
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products?search=samsung&minPrice=100&maxPrice=2000&sort=priceAsc&page=1&limit=10"
+          }
+        },
+        {
+          "name": "List Products By Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products?category={{categoryId}}"
+          },
+          "description": "Filtering by a parent category also returns products from its subcategories."
+        },
+        {
+          "name": "Get Product By Id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/products/{{productId}}" }
+        },
+        {
+          "name": "Update Product (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"stock\": 75\n}" },
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Delete Product (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order (Customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('orderId', pm.response.json().data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"product\": \"{{productId}}\", \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/orders"
+          },
+          "description": "Run 'Login' (customer session) first. Price and totalAmount are always computed server-side from the product record."
+        },
+        {
+          "name": "Get My Orders (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/my"
+          }
+        },
+        {
+          "name": "Get Order By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{orderId}}"
+          },
+          "description": "Owner or admin only; any other customer gets 403."
+        },
+        {
+          "name": "List All Orders (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders?page=1&limit=10"
+          },
+          "description": "Run 'Login (Admin)' first."
+        },
+        {
+          "name": "Update Order Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"Confirmed\"\n}" },
+            "url": "{{baseUrl}}/orders/{{orderId}}/status"
+          },
+          "description": "Run 'Login (Admin)' first. Cancelling restores stock; Delivered/Cancelled orders can no longer be updated."
+        }
+      ]
+    }
+  ]
+}

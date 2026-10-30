@@ -50,7 +50,8 @@ export const listProducts = async (query: ListProductsQuery): Promise<PaginatedR
   if (!query.includeInactive) filter.status = 'active';
 
   if (query.search) {
-    filter.$text = { $search: query.search };
+    const escaped = query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [{ name: { $regex: escaped, $options: 'i' } }, { description: { $regex: escaped, $options: 'i' } }];
   }
 
   if (query.category) {

@@ -1,16 +1,8 @@
 import ApiError from '../utils/ApiError';
 import Product from '../models/Product';
-import Order, { ORDER_STATUSES, OrderStatus, IOrder, IOrderItem } from '../models/Order';
-
-interface OrderItemInput {
-  product: string;
-  quantity: number;
-}
-
-interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-}
+import Order from '../models/Order';
+import { ORDER_STATUSES, OrderStatus, IOrder, IOrderItem, OrderItemInput } from '../types/order.types';
+import { PaginatedResult } from '../types/common.types';
 
 // Reserves stock for each item one at a time with an atomic conditional
 // update (stock only decrements if enough is available). If a later item

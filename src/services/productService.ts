@@ -1,34 +1,9 @@
 import ApiError from '../utils/ApiError';
-import Product, { IProduct } from '../models/Product';
+import Product from '../models/Product';
 import Category from '../models/Category';
 import { getDescendantIds } from '../utils/categoryTree';
-
-interface ProductInput {
-  name: string;
-  sku: string;
-  description?: string;
-  price: number;
-  salePrice?: number | null;
-  stock: number;
-  category: string;
-  status?: string;
-}
-
-interface ListProductsQuery {
-  page: number;
-  limit: number;
-  includeInactive?: boolean;
-  search?: string;
-  category?: string;
-  minPrice?: string;
-  maxPrice?: string;
-  sort?: string;
-}
-
-interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-}
+import { IProduct, ProductInput, ListProductsQuery } from '../types/product.types';
+import { PaginatedResult } from '../types/common.types';
 
 const SORT_MAP: Record<string, string> = {
   priceAsc: 'price',

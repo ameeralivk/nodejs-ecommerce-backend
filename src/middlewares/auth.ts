@@ -1,20 +1,19 @@
-import jwt from 'jsonwebtoken';
 import { RequestHandler } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import ApiError from '../utils/ApiError';
 import User from '../models/User';
-import { JwtPayload } from '../utils/jwt';
+import { verifyAccessToken } from '../utils/jwt';
+import { JwtPayload } from '../types/auth.types';
 
 export const protect = asyncHandler(async (req, res, next) => {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  const token = req.cookies?.accessToken;
+  if (!token) {
     throw new ApiError(401, 'Not authorized, token missing');
   }
 
-  const token = header.split(' ')[1];
   let decoded: JwtPayload;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+    decoded = verifyAccessToken(token);
   } catch (err) {
     throw new ApiError(401, 'Not authorized, invalid or expired token');
   }

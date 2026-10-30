@@ -1,16 +1,6 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-
-export type UserRole = 'admin' | 'customer';
-
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  isActive: boolean;
-  comparePassword(candidate: string): Promise<boolean>;
-}
+import { IUser } from '../types/user.types';
 
 const userSchema = new mongoose.Schema<IUser>(
   {

@@ -1,17 +1,7 @@
 import ApiError from '../utils/ApiError';
-import User, { IUser } from '../models/User';
-
-interface ListUsersQuery {
-  page: number;
-  limit: number;
-  role?: string;
-  isActive?: string;
-}
-
-interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-}
+import User from '../models/User';
+import { IUser, ListUsersQuery } from '../types/user.types';
+import { PaginatedResult } from '../types/common.types';
 
 export const updateProfile = async (
   user: IUser,

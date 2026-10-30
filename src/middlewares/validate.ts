@@ -1,16 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
+import { ZodType } from 'zod';
 import ApiError from '../utils/ApiError';
 
-const validate = (req: Request, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const message = errors
-      .array()
-      .map((e) => e.msg)
-      .join(', ');
+const validate = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    const message = result.error.issues.map((issue) => issue.message).join(', ');
     return next(new ApiError(400, message));
   }
+  req.body = result.data;
   next();
 };
 

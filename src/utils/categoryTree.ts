@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import Category, { ICategory } from '../models/Category';
+import Category from '../models/Category';
+import { ICategory } from '../types/category.types';
 
 type CategoryId = mongoose.Types.ObjectId | string;
 

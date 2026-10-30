@@ -1,9 +1,5 @@
-import mongoose, { Document } from 'mongoose';
-
-export interface ICategory extends Document {
-  name: string;
-  parent: mongoose.Types.ObjectId | null;
-}
+import mongoose from 'mongoose';
+import { ICategory } from '../types/category.types';
 
 const categorySchema = new mongoose.Schema<ICategory>(
   {

@@ -1,17 +1,5 @@
-import mongoose, { Document } from 'mongoose';
-
-export type ProductStatus = 'active' | 'inactive';
-
-export interface IProduct extends Document {
-  name: string;
-  sku: string;
-  description: string;
-  price: number;
-  salePrice: number | null;
-  stock: number;
-  category: mongoose.Types.ObjectId;
-  status: ProductStatus;
-}
+import mongoose from 'mongoose';
+import { IProduct } from '../types/product.types';
 
 const productSchema = new mongoose.Schema<IProduct>(
   {

@@ -1,7 +1,8 @@
 import ApiError from '../utils/ApiError';
-import Category, { ICategory } from '../models/Category';
+import Category from '../models/Category';
 import Product from '../models/Product';
 import { buildTree, wouldCreateCycle } from '../utils/categoryTree';
+import { ICategory } from '../types/category.types';
 
 export const createCategory = async (name: string, parent?: string | null): Promise<ICategory> => {
   if (parent) {

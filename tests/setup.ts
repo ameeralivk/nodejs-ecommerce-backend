@@ -1,0 +1,25 @@
+import { beforeAll, afterEach, afterAll } from 'vitest';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+process.env.JWT_SECRET = 'test-access-secret';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+process.env.ACCESS_TOKEN_EXPIRES_IN = '15m';
+process.env.REFRESH_TOKEN_EXPIRES_IN = '30d';
+
+let mongod: MongoMemoryServer;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  await mongoose.connect(mongod.getUri());
+}, 60000);
+
+afterEach(async () => {
+  const { collections } = mongoose.connection;
+  await Promise.all(Object.values(collections).map((collection) => collection.deleteMany({})));
+});
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongod.stop();
+});

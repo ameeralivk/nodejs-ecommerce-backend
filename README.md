@@ -50,7 +50,7 @@ Controllers never talk to Mongoose models directly — they call the matching fu
 
 4. Run the server
    ```
-   npm run dev     # ts-node-dev, auto-restarts on changes
+   npm run dev     # tsx watch, auto-restarts on changes
    npm run build   # compiles TypeScript to dist/
    npm start       # runs the compiled dist/server.js
    ```
